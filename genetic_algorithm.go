@@ -14,6 +14,7 @@ const (
 )
 
 type GeneticAlgorithm struct {
+	conf *Conf
 	population  []*Chromosome
 	resultIndex int
 	firstIndex  int
@@ -22,9 +23,9 @@ type GeneticAlgorithm struct {
 	worstIndex  int
 }
 
-func NewGeneticAlgorithm(populationSize int) *GeneticAlgorithm {
+func NewGeneticAlgorithm() *GeneticAlgorithm {
 	return &GeneticAlgorithm{
-		population:  make([]*Chromosome, populationSize),
+		population:  []*Chromosome{},
 		resultIndex: 0,
 		firstIndex:  0,
 		secondIndex: 0,
@@ -51,6 +52,10 @@ func (g *GeneticAlgorithm) GetResultIndex() int {
 
 func (g *GeneticAlgorithm) GetBestIndex() int {
 	return g.bestIndex
+}
+
+func (g *GeneticAlgorithm) AddChromosome(chromosome *Chromosome) {
+	g.SetChromosome(chromosome, -1)
 }
 
 func (g *GeneticAlgorithm) SetChromosome(chromosome *Chromosome, index int) {
@@ -102,15 +107,10 @@ func (g *GeneticAlgorithm) ReplaceWorst(chromosome *Chromosome) {
 	}
 }
 
+func (g *GeneticAlgorithm) AddFitness(fitness float64) {
+	g.SetFitness(fitness, len(g.population) - 1)
+}
 func (g *GeneticAlgorithm) SetFitness(fitness float64, index int) {
-	if index < 0 {
-		index = len(g.population) - 1
-	}
-
-	if len(g.population) <= index {
-		panic("invalid index")
-	}
-
 	g.population[index].fitness = fitness
 	if fitness < g.population[g.bestIndex].fitness {
 		g.bestIndex = index
@@ -198,40 +198,40 @@ func (g *GeneticAlgorithm) Mutation() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
-func (g *GeneticAlgorithm) AddRandomReels(model *SlotModel, targets []float64, populationSize int) {
+func (g *GeneticAlgorithm) AddRandomReels(model *SlotModel, populationSize int) {
 	for p := 0; p < populationSize; p++ {
-		reels := make([][]int, model.config.ReelsSize)
-		for i := 0; i < model.config.ReelsSize; i++ {
-			for j := 0; j < model.config.ReelSize; j++ {
-				value := rand.Intn(len(model.symbols) - 1) + 1
+		reels := make([][]int, model.conf.ReelsSize)
+		for i := 0; i < model.conf.ReelsSize; i++ {
+			for j := 0; j < model.conf.ReelSize; j++ {
+				value := rand.Intn(len(model.conf.Symbols))
 				reels[i] = append(reels[i], value)
 			}
 		}
 
-		g.SetChromosome(NewChromosome(reels, InvalidReelsPenalty), -1)
-		g.SetFitness(evaluate(model, targets, reels), -1)
+		g.AddChromosome(NewChromosome(reels, InvalidReelsPenalty, g.conf))
+		g.AddFitness(model.Evaluate(reels))
 	}
 }
 
-func (g *GeneticAlgorithm) Optimize(model *SlotModel, target []float64, epochs int64) {
+func (g *GeneticAlgorithm) Optimize(model *SlotModel, epochs int64) {
 	var e int64
 	for e = 0; e < epochs*int64(g.Size()); e++ {
 		g.Selection()
 		g.Crossover()
 		g.Mutation()
 		index := g.GetResultIndex()
-		g.SetFitness(evaluate(model, target, g.GetChromosome(index).reels), index)
+		g.SetFitness(model.Evaluate(g.GetChromosome(index).reels), index)
 	}
 }
 
-func (g *GeneticAlgorithm) String(model *SlotModel) string {
+func (g *GeneticAlgorithm) String() string {
 	result := ""
 	result += fmt.Sprintf("number of populations %d\n\n", len(g.population))
 	for p := 0; p < len(g.population); p++ {
 		result += fmt.Sprintf("===> population: %d\n", p)
 		for i := 0; i < len(g.population[p].reels); i++ {
 			for j := 0; j < len(g.population[p].reels[i]); j++ {
-				result += fmt.Sprintf("%s", model.symbols[g.population[p].reels[i][j]])
+				result += fmt.Sprintf("%s", g.conf.Symbols[g.population[p].reels[i][j]])
 				result += " "
 			}
 			result += "\n"
@@ -242,17 +242,4 @@ func (g *GeneticAlgorithm) String(model *SlotModel) string {
 
 	result = result[:len(result) - 1]
 	return result
-}
-
-// tính tỉ lệ lệch so với mục đích muốn tỉ lệ ăn
-func evaluate(model *SlotModel, target []float64, reels [][]int) float64 {
-	model.Load(reels)
-	model.Init()
-	parameters := model.calculate()
-	sum := 0.0
-	for i := 0; i < len(target) && i < len(parameters); i++ {
-		sum += (target[i] - parameters[i]) * (target[i] - parameters[i])
-	}
-
-	return sum
 }
