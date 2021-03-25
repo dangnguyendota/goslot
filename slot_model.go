@@ -2,85 +2,42 @@ package goslot
 
 const InvalidReelsPenalty = 10000
 
+type ComputeResultFunc func(model Model) []float64
+
 type Model interface {
-	ValidLine(line []int)
+	Win() int                       // trả về số tiền ăn được (tỉ lệ so với tiền cược là 1)
+	Scatters() int                  // trả về số lượng Scatters trong view
+	Bonus() int                     // trả về số lượng Bonus trong view
+	Evaluate(reels [][]int) float64 // trả về epsilon cho reel  càng gần 0 thì càng chuẩn
 }
 
 type SlotModel struct {
-	conf  *Conf
-	reels [][]int // reel hiện tại
-	stops []int   // vị trí của line ăn đang xét hiện tại
-	//line  []int    // line ăn hiện tại
+	conf        *Conf
+	computeFunc ComputeResultFunc
+	reels       [][]int // reel hiện tại
+	stops       []int   // vị trí của line ăn đang xét hiện tại
 }
 
-func NewSlotModel(config *Conf) *SlotModel {
+func NewModel(config *Conf, computeFunc ComputeResultFunc) Model {
 	return &SlotModel{
-		conf:  config,
-		reels: make([][]int, 0),
-		stops: make([]int, 0),
-		//line:        make([]int, 0),
+		conf:        config,
+		computeFunc: computeFunc,
+		reels:       make([][]int, 0),
+		stops:       make([]int, 0),
 	}
-}
-
-// tải reel vào
-func (s *SlotModel) Load(reels [][]int) {
-	s.reels = make([][]int, len(reels))
-	for i := 0; i < len(s.reels); i++ {
-		s.reels[i] = make([]int, len(reels[i]))
-		copy(s.reels[i], reels[i])
-	}
-}
-
-// số ô trong reel
-func (s *SlotModel) Combinations() int64 {
-	var result int64 = 1
-	for i := 0; i < len(s.reels); i++ {
-		result *= int64(len(s.reels[i]))
-	}
-	return result
-}
-
-// khởi tạo các ô đang dừng ở đó
-// và hàng ăn
-func (s *SlotModel) Init() {
-	s.stops = make([]int, len(s.reels))
-	for i := 0; i < len(s.reels); i++ {
-		s.stops[i] = 0
-	}
-	//s.line = make([]int, len(s.reels))
-	//for i := 0; i < len(s.reels); i++ {
-	//	s.line[i] = s.reels[i][s.stops[i]]
-	//}
-}
-
-// chuyển sang line khác
-func (s *SlotModel) Next() {
-	s.stops[len(s.reels)-1] += 1
-	for i := len(s.reels) - 1; i > 0; i-- {
-		if s.stops[i] >= len(s.reels[i]) {
-			s.stops[i] = 0
-			s.stops[i-1] += 1
-		}
-	}
-	if s.stops[0] >= len(s.reels[0]) {
-		s.stops[0] = 0
-	}
-
-	//s.line = make([]int, len(s.reels))
-	//for i := 0; i < len(s.reels); i++ {
-	//	s.line[i] = s.reels[i][s.stops[i]]
-	//}
 }
 
 // trả về tiền ăn được
 func (s *SlotModel) Win() int {
 	win := 0
 	for _, payLine := range s.conf.PayLines {
-		line := make([]int, s.conf.ReelsSize)
-		for i := 0; i < s.conf.ReelsSize; i++ {
+		// lấy line tương ứng với payline này
+		line := make([]int, s.conf.ColsSize)
+		for i := 0; i < s.conf.ColsSize; i++ {
 			line[i] = s.reels[i][s.stops[i]] + payLine[i]
 		}
 
+		// lấy biểu tượng đầu tiên (từ trái qua phải) khác WILD
 		symbol := line[0]
 		for i := 0; i < len(line); i++ {
 			if s.conf.Types[symbol] != WILD {
@@ -88,12 +45,15 @@ func (s *SlotModel) Win() int {
 			}
 			symbol = line[i]
 		}
+
+		// thay tất cả các WILD thành biểu tượng tìm được
 		for i := 0; i < len(line); i++ {
-			if line[i] == 1 {
+			if s.conf.Types[line[i]] == WILD {
 				line[i] = symbol
 			}
 		}
 
+		// đếm từ trái qua phải xem có bao nhiêu symbol liên tiếp
 		counter := 0
 		for i := 0; i < len(line); i++ {
 			if line[i] == symbol {
@@ -102,12 +62,13 @@ func (s *SlotModel) Win() int {
 				break
 			}
 		}
+		// tính tiền số lượng symbol đó
 		win += s.conf.PayTable[counter][symbol]
 	}
 	return win
 }
 
-// trả về số lượng scatter
+// trả về số lượng scatter trong view
 func (s *SlotModel) Scatters() int {
 	counter := 0
 	for i := 0; i < len(s.reels); i++ {
@@ -120,7 +81,7 @@ func (s *SlotModel) Scatters() int {
 	return counter
 }
 
-//  tính số lượng bonus
+//  tính số lượng bonus trong view
 func (s *SlotModel) Bonus() int {
 	counter := 0
 	for i := 0; i < len(s.reels); i++ {
@@ -133,70 +94,10 @@ func (s *SlotModel) Bonus() int {
 	return counter
 }
 
-// returns [ăn được bao nhiêu, số case ăn 1 scatter, số case ăn 2 scatter,
-//			số case ăn 3 scatter, số case ăn 1 bonus, số case ăn 2 bonus,
-//			số case ăn 3 bonus]
-func (s *SlotModel) calculate() []float64 {
-	result := make([]float64, 7)
-	// RTP
-	result[0] = 0
-	// free games frequency (scatters as activator).
-	// activation can be from 3, 4 or 5 scatters
-	result[1] = 0
-	result[2] = 0
-	result[3] = 0
-	// bonus game frequency (bonus symbols as activator)
-	// activation can be from 3, 4 or 5 bonus symbols
-	result[4] = 0
-	result[5] = 0
-	result[6] = 0
-	for g := s.Combinations() - 1; g >= 0; g-- {
-		result[0] += float64(s.Win())
-
-		switch s.Scatters() {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			result[1]++
-			result[0] += float64(s.conf.Multipliers[3])
-		case 4:
-			result[2]++
-			result[0] += float64(s.conf.Multipliers[4])
-		case 5:
-			result[3]++
-			result[0] += float64(s.conf.Multipliers[5])
-		default:
-			result[0] += InvalidReelsPenalty
-		}
-
-		switch s.Bonus() {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			result[4]++
-		case 4:
-			result[5]++
-		case 5:
-			result[6]++
-		default:
-			result[0] += InvalidReelsPenalty
-		}
-
-		s.Next()
-	}
-
-	for i := 0; i < len(result); i++ {
-		result[i] /= float64(s.Combinations())
-	}
-	return result
-}
-
 // tính tỉ lệ lệch so với mục đích muốn tỉ lệ ăn
 func (s *SlotModel) Evaluate(reels [][]int) float64 {
-	s.Load(reels)
-	s.Init()
+	s.load(reels)
+	s.init()
 	parameters := s.calculate()
 	sum := 0.0
 	for i := 0; i < len(s.conf.Targets) && i < len(parameters); i++ {
@@ -204,4 +105,66 @@ func (s *SlotModel) Evaluate(reels [][]int) float64 {
 	}
 
 	return sum
+}
+
+// số trường hợp có thể xảy ra
+func (s *SlotModel) combinations() int64 {
+	var result int64 = 1
+	for i := 0; i < len(s.reels); i++ {
+		result *= int64(len(s.reels[i]))
+	}
+	return result
+}
+
+// tải reel vào
+func (s *SlotModel) load(reels [][]int) {
+	s.reels = make([][]int, len(reels))
+	for i := 0; i < len(s.reels); i++ {
+		s.reels[i] = make([]int, len(reels[i]))
+		copy(s.reels[i], reels[i])
+	}
+}
+
+// khởi tạo các ô đang dừng ở đó
+// và hàng ăn
+func (s *SlotModel) init() {
+	s.stops = make([]int, len(s.reels))
+	for i := 0; i < len(s.reels); i++ {
+		s.stops[i] = 0
+	}
+	//s.line = make([]int, len(s.reels))
+	//for i := 0; i < len(s.reels); i++ {
+	//	s.line[i] = s.reels[i][s.stops[i]]
+	//}
+}
+
+// chuyển sang line khác
+func (s *SlotModel) next() {
+	s.stops[len(s.reels)-1] += 1
+	for i := len(s.reels) - 1; i > 0; i-- {
+		if s.stops[i] >= len(s.reels[i]) {
+			s.stops[i] = 0
+			s.stops[i-1] += 1
+		}
+	}
+	if s.stops[0] >= len(s.reels[0]) {
+		s.stops[0] = 0
+	}
+}
+
+// returns sum of result from computeFunc
+func (s *SlotModel) calculate() []float64 {
+	result := make([]float64, len(s.conf.Targets))
+	for g := s.combinations() - 1; g >= 0; g-- {
+		r := s.computeFunc(s)
+		for i := 0; i < len(result); i++ {
+			result[i] += r[i]
+		}
+		s.next()
+	}
+
+	for i := 0; i < len(result); i++ {
+		result[i] /= float64(s.combinations())
+	}
+	return result
 }

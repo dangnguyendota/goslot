@@ -14,17 +14,19 @@ type Generator struct {
 	mux         sync.Mutex
 	wait        sync.WaitGroup
 	conf        *Conf
+	computeFunc ComputeResultFunc
 	global      *GeneticAlgorithm
 	populations map[int]*GeneticAlgorithm
 }
 
-func NewGenerator(conf *Conf) *Generator {
-	model := NewSlotModel(conf)
+func NewGenerator(conf *Conf, calculator ComputeResultFunc) *Generator {
+	model := NewModel(conf, calculator)
 	ga := NewGeneticAlgorithm()
-	ga.AddRandomReels(model, conf.LocalPopulationSize*conf.NumberOfNodes)
+	ga.addRandomReels(model, conf.LocalPopulationSize*conf.NumberOfNodes)
 
 	return &Generator{
 		conf:        conf,
+		computeFunc: calculator,
 		global:      ga,
 		populations: make(map[int]*GeneticAlgorithm),
 	}
@@ -42,7 +44,7 @@ func (g *Generator) Start() {
 }
 
 func (g *Generator) GetBestChromosome() *Chromosome {
-	return g.global.GetBestChromosome()
+	return g.global.getBestChromosome()
 }
 
 func (g *Generator) getGA(rank int) *GeneticAlgorithm {
@@ -50,7 +52,7 @@ func (g *Generator) getGA(rank int) *GeneticAlgorithm {
 	defer g.mux.Unlock()
 	if _, ok := g.populations[rank]; !ok || rand.Intn(int(g.conf.NumberOfLifeCircle/10)) == 0 {
 		ga := NewGeneticAlgorithm()
-		g.global.Subset(ga, g.conf.LocalPopulationSize)
+		g.global.subset(ga, g.conf.LocalPopulationSize)
 		g.populations[rank] = ga
 	}
 	return g.populations[rank]
@@ -60,17 +62,17 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 	g.mux.Lock()
 	defer g.mux.Unlock()
 	g.populations[rank] = ga
-	if ga.GetBestFitness() < g.global.GetBestFitness() {
-		g.global.AddChromosome(ga.GetBestChromosome())
+	if ga.getBestFitness() < g.global.getBestFitness() {
+		g.global.addChromosome(ga.getBestChromosome())
 	}
 }
 
 func (g *Generator) start(rank int) {
-	model := NewSlotModel(g.conf)
+	model := NewModel(g.conf, g.computeFunc)
 	var counter int
 	for {
 		ga := g.getGA(rank)
-		ga.Optimize(model, g.conf.LocalOptimizationEpochs)
+		ga.optimize(model, g.conf.LocalOptimizationEpochs)
 		g.setGA(rank, ga)
 		counter++
 		if counter > g.conf.NumberOfLifeCircle {

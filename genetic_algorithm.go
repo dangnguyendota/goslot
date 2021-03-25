@@ -14,7 +14,7 @@ const (
 )
 
 type GeneticAlgorithm struct {
-	conf *Conf
+	conf        *Conf
 	population  []*Chromosome
 	resultIndex int
 	firstIndex  int
@@ -46,19 +46,19 @@ func (g *GeneticAlgorithm) selectRandom() {
 	}
 }
 
-func (g *GeneticAlgorithm) GetResultIndex() int {
+func (g *GeneticAlgorithm) getResultIndex() int {
 	return g.resultIndex
 }
 
-func (g *GeneticAlgorithm) GetBestIndex() int {
+func (g *GeneticAlgorithm) getBestIndex() int {
 	return g.bestIndex
 }
 
-func (g *GeneticAlgorithm) AddChromosome(chromosome *Chromosome) {
-	g.SetChromosome(chromosome, -1)
+func (g *GeneticAlgorithm) addChromosome(chromosome *Chromosome) {
+	g.setChromosome(chromosome, -1)
 }
 
-func (g *GeneticAlgorithm) SetChromosome(chromosome *Chromosome, index int) {
+func (g *GeneticAlgorithm) setChromosome(chromosome *Chromosome, index int) {
 	if index < 0 {
 		g.population = append(g.population, chromosome)
 		index = len(g.population) - 1
@@ -74,26 +74,26 @@ func (g *GeneticAlgorithm) SetChromosome(chromosome *Chromosome, index int) {
 	}
 }
 
-func (g *GeneticAlgorithm) GetChromosome(index int) *Chromosome {
+func (g *GeneticAlgorithm) getChromosome(index int) *Chromosome {
 	if len(g.population) <= index || index <= -1 {
 		panic("invalid index")
 	}
 	return g.population[index]
 }
 
-func (g *GeneticAlgorithm) GetBestChromosome() *Chromosome {
+func (g *GeneticAlgorithm) getBestChromosome() *Chromosome {
 	return g.population[g.bestIndex]
 }
 
-func (g *GeneticAlgorithm) GetRandomChromosome() *Chromosome {
+func (g *GeneticAlgorithm) getRandomChromosome() *Chromosome {
 	return g.population[rand.Intn(len(g.population))]
 }
 
-func (g *GeneticAlgorithm) GetWorstChromosome() *Chromosome {
+func (g *GeneticAlgorithm) getWorstChromosome() *Chromosome {
 	return g.population[g.worstIndex]
 }
 
-func (g *GeneticAlgorithm) ReplaceWorst(chromosome *Chromosome) {
+func (g *GeneticAlgorithm) replaceWorst(chromosome *Chromosome) {
 	g.population[g.worstIndex] = chromosome
 	g.bestIndex = 0
 	g.worstIndex = 0
@@ -107,10 +107,10 @@ func (g *GeneticAlgorithm) ReplaceWorst(chromosome *Chromosome) {
 	}
 }
 
-func (g *GeneticAlgorithm) AddFitness(fitness float64) {
-	g.SetFitness(fitness, len(g.population) - 1)
+func (g *GeneticAlgorithm) addFitness(fitness float64) {
+	g.setFitness(fitness, len(g.population)-1)
 }
-func (g *GeneticAlgorithm) SetFitness(fitness float64, index int) {
+func (g *GeneticAlgorithm) setFitness(fitness float64, index int) {
 	g.population[index].fitness = fitness
 	if fitness < g.population[g.bestIndex].fitness {
 		g.bestIndex = index
@@ -120,28 +120,28 @@ func (g *GeneticAlgorithm) SetFitness(fitness float64, index int) {
 	}
 }
 
-func (g *GeneticAlgorithm) GetFitness(index int) float64 {
+func (g *GeneticAlgorithm) getFitness(index int) float64 {
 	return g.population[index].fitness
 }
 
-func (g *GeneticAlgorithm) GetBestFitness() float64 {
+func (g *GeneticAlgorithm) getBestFitness() float64 {
 	return g.population[g.bestIndex].fitness
 }
 
-func (g *GeneticAlgorithm) Size() int {
+func (g *GeneticAlgorithm) size() int {
 	return len(g.population)
 }
 
-func (g *GeneticAlgorithm) Subset(ga *GeneticAlgorithm, size int) {
+func (g *GeneticAlgorithm) subset(ga *GeneticAlgorithm, size int) {
 	if len(g.population) <= 0 {
 		return
 	}
 	for i := 0; i < size; i++ {
-		ga.SetChromosome(g.GetRandomChromosome(), -1)
+		ga.setChromosome(g.getRandomChromosome(), -1)
 	}
 }
 
-func (g *GeneticAlgorithm) Selection() {
+func (g *GeneticAlgorithm) selection() {
 	var percent int
 	percent = rand.Int() % (CrossoverResultIntoWorstPercent +
 		CrossoverResultIntoMiddlePercent +
@@ -173,7 +173,7 @@ func (g *GeneticAlgorithm) Selection() {
 	}
 }
 
-func (g *GeneticAlgorithm) Crossover() {
+func (g *GeneticAlgorithm) crossover() {
 	a := g.population[g.firstIndex].reels
 	b := g.population[g.secondIndex].reels
 	c := g.population[g.resultIndex].reels
@@ -190,7 +190,7 @@ func (g *GeneticAlgorithm) Crossover() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
-func (g *GeneticAlgorithm) Mutation() {
+func (g *GeneticAlgorithm) mutation() {
 	index := rand.Intn(len(g.population))
 	i := rand.Intn(len(g.population[g.resultIndex].reels))
 	j := rand.Intn(len(g.population[g.resultIndex].reels[i]))
@@ -198,29 +198,29 @@ func (g *GeneticAlgorithm) Mutation() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
-func (g *GeneticAlgorithm) AddRandomReels(model *SlotModel, populationSize int) {
+func (g *GeneticAlgorithm) addRandomReels(model Model, populationSize int) {
 	for p := 0; p < populationSize; p++ {
-		reels := make([][]int, model.conf.ReelsSize)
-		for i := 0; i < model.conf.ReelsSize; i++ {
-			for j := 0; j < model.conf.ReelSize; j++ {
-				value := rand.Intn(len(model.conf.Symbols))
+		reels := make([][]int, g.conf.ColsSize)
+		for i := 0; i < g.conf.ColsSize; i++ {
+			for j := 0; j < g.conf.ReelSize; j++ {
+				value := rand.Intn(len(g.conf.Symbols))
 				reels[i] = append(reels[i], value)
 			}
 		}
 
-		g.AddChromosome(NewChromosome(reels, InvalidReelsPenalty, g.conf))
-		g.AddFitness(model.Evaluate(reels))
+		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty, g.conf))
+		g.addFitness(model.Evaluate(reels))
 	}
 }
 
-func (g *GeneticAlgorithm) Optimize(model *SlotModel, epochs int64) {
+func (g *GeneticAlgorithm) optimize(model Model, epochs int64) {
 	var e int64
-	for e = 0; e < epochs*int64(g.Size()); e++ {
-		g.Selection()
-		g.Crossover()
-		g.Mutation()
-		index := g.GetResultIndex()
-		g.SetFitness(model.Evaluate(g.GetChromosome(index).reels), index)
+	for e = 0; e < epochs*int64(g.size()); e++ {
+		g.selection()
+		g.crossover()
+		g.mutation()
+		index := g.getResultIndex()
+		g.setFitness(model.Evaluate(g.getChromosome(index).reels), index)
 	}
 }
 
@@ -240,6 +240,6 @@ func (g *GeneticAlgorithm) String() string {
 		result += "\n"
 	}
 
-	result = result[:len(result) - 1]
+	result = result[:len(result)-1]
 	return result
 }
