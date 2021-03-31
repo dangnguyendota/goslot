@@ -1,6 +1,7 @@
 package goslot
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -21,7 +22,7 @@ type Generator struct {
 
 func NewGenerator(conf *Conf, calculator ComputeResultFunc) *Generator {
 	model := NewModel(conf, calculator)
-	ga := NewGeneticAlgorithm()
+	ga := NewGeneticAlgorithm(conf)
 	ga.addRandomReels(model, conf.LocalPopulationSize*conf.NumberOfNodes)
 
 	return &Generator{
@@ -51,7 +52,7 @@ func (g *Generator) getGA(rank int) *GeneticAlgorithm {
 	g.mux.Lock()
 	defer g.mux.Unlock()
 	if _, ok := g.populations[rank]; !ok || rand.Intn(int(g.conf.NumberOfLifeCircle/10)) == 0 {
-		ga := NewGeneticAlgorithm()
+		ga := NewGeneticAlgorithm(g.conf)
 		g.global.subset(ga, g.conf.LocalPopulationSize)
 		g.populations[rank] = ga
 	}
@@ -64,6 +65,9 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 	g.populations[rank] = ga
 	if ga.getBestFitness() < g.global.getBestFitness() {
 		g.global.addChromosome(ga.getBestChromosome())
+		println(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s",
+			ga.getBestChromosome().fitness,
+			ChromosomeString(ga.getBestChromosome(), g.conf.Symbols)))
 	}
 }
 
@@ -75,6 +79,7 @@ func (g *Generator) start(rank int) {
 		ga.optimize(model, g.conf.LocalOptimizationEpochs)
 		g.setGA(rank, ga)
 		counter++
+		//println("rank:", rank, "counter:", counter)
 		if counter > g.conf.NumberOfLifeCircle {
 			break
 		}

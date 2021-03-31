@@ -23,8 +23,9 @@ type GeneticAlgorithm struct {
 	worstIndex  int
 }
 
-func NewGeneticAlgorithm() *GeneticAlgorithm {
+func NewGeneticAlgorithm(conf *Conf) *GeneticAlgorithm {
 	return &GeneticAlgorithm{
+		conf: conf,
 		population:  []*Chromosome{},
 		resultIndex: 0,
 		firstIndex:  0,
@@ -208,7 +209,7 @@ func (g *GeneticAlgorithm) addRandomReels(model Model, populationSize int) {
 			}
 		}
 
-		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty, g.conf))
+		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
 		g.addFitness(model.Evaluate(reels))
 	}
 }

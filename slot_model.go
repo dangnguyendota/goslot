@@ -34,7 +34,7 @@ func (s *SlotModel) Win() int {
 		// lấy line tương ứng với payline này
 		line := make([]int, s.conf.ColsSize)
 		for i := 0; i < s.conf.ColsSize; i++ {
-			line[i] = s.reels[i][s.stops[i]] + payLine[i]
+			line[i] = s.reels[i][(s.stops[i]+payLine[i]) % s.conf.ReelSize]
 		}
 
 		// lấy biểu tượng đầu tiên (từ trái qua phải) khác WILD
