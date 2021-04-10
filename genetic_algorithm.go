@@ -199,7 +199,7 @@ func (g *GeneticAlgorithm) mutation() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
-func (g *GeneticAlgorithm) addRandomReels(model Model, populationSize int) {
+func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize int) {
 	for p := 0; p < populationSize; p++ {
 		reels := make([][]int, g.conf.ColsSize)
 		for i := 0; i < g.conf.ColsSize; i++ {
@@ -210,18 +210,18 @@ func (g *GeneticAlgorithm) addRandomReels(model Model, populationSize int) {
 		}
 
 		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
-		g.addFitness(model.Evaluate(reels))
+		g.addFitness(machine.evaluate(reels))
 	}
 }
 
-func (g *GeneticAlgorithm) optimize(model Model, epochs int64) {
+func (g *GeneticAlgorithm) optimize(machine *SlotMachine, epochs int64) {
 	var e int64
 	for e = 0; e < epochs*int64(g.size()); e++ {
 		g.selection()
 		g.crossover()
 		g.mutation()
 		index := g.getResultIndex()
-		g.setFitness(model.Evaluate(g.getChromosome(index).reels), index)
+		g.setFitness(machine.evaluate(g.getChromosome(index).reels), index)
 	}
 }
 

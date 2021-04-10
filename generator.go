@@ -15,25 +15,23 @@ type Generator struct {
 	mux         sync.Mutex
 	wait        sync.WaitGroup
 	conf        *Conf
-	computeFunc ComputeResultFunc
 	global      *GeneticAlgorithm
 	populations map[int]*GeneticAlgorithm
+	model       Model
 }
 
-func NewGenerator(conf *Conf, calculator ComputeResultFunc) *Generator {
-	model := NewModel(conf, calculator)
-	ga := NewGeneticAlgorithm(conf)
-	ga.addRandomReels(model, conf.LocalPopulationSize*conf.NumberOfNodes)
+func NewGenerator(conf *Conf, model Model) *Generator {
 
 	return &Generator{
 		conf:        conf,
-		computeFunc: calculator,
-		global:      ga,
+		model:       model,
 		populations: make(map[int]*GeneticAlgorithm),
 	}
 }
 
 func (g *Generator) Start() {
+	ga := NewGeneticAlgorithm(g.conf)
+	ga.addRandomReels(NewMachine(g.conf, g.model), g.conf.LocalPopulationSize*g.conf.NumberOfNodes)
 	for rank := 0; rank < g.conf.NumberOfNodes; rank++ {
 		g.wait.Add(1)
 		go func(rank int) {
@@ -72,11 +70,11 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 }
 
 func (g *Generator) start(rank int) {
-	model := NewModel(g.conf, g.computeFunc)
+	//model := NewModel(g.conf, g.computeFunc)
 	var counter int
 	for {
 		ga := g.getGA(rank)
-		ga.optimize(model, g.conf.LocalOptimizationEpochs)
+		ga.optimize(NewMachine(g.conf, g.model), g.conf.LocalOptimizationEpochs)
 		g.setGA(rank, ga)
 		counter++
 		//println("rank:", rank, "counter:", counter)
