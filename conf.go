@@ -20,8 +20,7 @@ type Conf struct {
 	Targets                 []float64    `json:"targets"`                   // bảng tỉ lệ ăn
 	Symbols                 []string     `json:"symbols"`                   // list các symbol
 	Types                   []SymbolType `json:"types"`                     // kiểu của kí tự
-	//PayTable                [][]int      `json:"pay_table"`                 // bảng tỉ lệ ăn [ColsSize][Number Of Symbols]
-	//PayLines                [][]int      `json:"pay_lines"`                 // hàng ăn
+	OutputFile              string       `json:"output_file"`
 }
 
 func (c *Conf) Validate() {

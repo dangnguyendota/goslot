@@ -2,7 +2,9 @@ package goslot
 
 import (
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"sync"
 	"time"
 )
@@ -21,7 +23,6 @@ type Generator struct {
 }
 
 func NewGenerator(conf *Conf, model Model) *Generator {
-
 	return &Generator{
 		conf:        conf,
 		model:       model,
@@ -63,9 +64,12 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 	g.populations[rank] = ga
 	if ga.getBestFitness() < g.global.getBestFitness() {
 		g.global.addChromosome(ga.getBestChromosome())
-		println(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s",
+		data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
 			ga.getBestChromosome().fitness,
 			ChromosomeString(ga.getBestChromosome(), g.conf.Symbols)))
+		if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend); err != nil {
+			panic(err)
+		}
 	}
 }
 
