@@ -31,8 +31,8 @@ func NewGenerator(conf *Conf, model Model) *Generator {
 }
 
 func (g *Generator) Start() {
-	ga := NewGeneticAlgorithm(g.conf)
-	ga.addRandomReels(NewMachine(g.conf, g.model), g.conf.LocalPopulationSize*g.conf.NumberOfNodes)
+	g.global = NewGeneticAlgorithm(g.conf)
+	g.global.addRandomReels(NewMachine(g.conf, g.model), g.conf.LocalPopulationSize*g.conf.NumberOfNodes)
 	for rank := 0; rank < g.conf.NumberOfNodes; rank++ {
 		g.wait.Add(1)
 		go func(rank int) {
