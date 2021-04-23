@@ -33,6 +33,7 @@ func NewGenerator(conf *Conf, model Model) *Generator {
 func (g *Generator) Start() {
 	g.global = NewGeneticAlgorithm(g.conf)
 	g.global.addRandomReels(NewMachine(g.conf, g.model), g.conf.LocalPopulationSize*g.conf.NumberOfNodes)
+	g.StoreChromosome()
 	for rank := 0; rank < g.conf.NumberOfNodes; rank++ {
 		g.wait.Add(1)
 		go func(rank int) {
@@ -64,13 +65,17 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 	g.populations[rank] = ga
 	if ga.getBestFitness() < g.global.getBestFitness() {
 		g.global.addChromosome(ga.getBestChromosome())
-		data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
-			ga.getBestChromosome().fitness,
-			ChromosomeString(ga.getBestChromosome(), g.conf.Symbols)))
-		println(string(data))
-		if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend); err != nil {
-			panic(err)
-		}
+		g.StoreChromosome()
+	}
+}
+
+func (g *Generator) StoreChromosome() {
+	ga := g.global.getBestChromosome()
+	data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
+		ga.fitness, ChromosomeString(ga, g.conf.Symbols)))
+	println(string(data))
+	if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend); err != nil {
+		panic(err)
 	}
 }
 
