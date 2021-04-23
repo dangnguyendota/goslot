@@ -74,7 +74,7 @@ func (g *Generator) StoreChromosome() {
 	data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
 		ga.fitness, ChromosomeString(ga, g.conf.Symbols)))
 	println(string(data))
-	if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend); err != nil {
+	if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend | os.ModePerm); err != nil {
 		panic(err)
 	}
 }
