@@ -67,6 +67,7 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 		data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
 			ga.getBestChromosome().fitness,
 			ChromosomeString(ga.getBestChromosome(), g.conf.Symbols)))
+		println(string(data))
 		if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend); err != nil {
 			panic(err)
 		}
