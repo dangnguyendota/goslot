@@ -39,7 +39,7 @@ func (s *SlotMachine) evaluate(reels [][]int) float64 {
 	s.load(reels)
 	s.init()
 	parameters := s.calculate()
-	sum := 0.0
+	var sum float64
 	for i := 0; i < len(s.conf.Targets) && i < len(parameters); i++ {
 		sum += (s.conf.Targets[i] - parameters[i]) * (s.conf.Targets[i] - parameters[i])
 	}

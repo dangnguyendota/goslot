@@ -10,17 +10,18 @@ const (
 )
 
 type Conf struct {
-	ColsSize                int          `json:"cols_size"`                 // số cột
-	ReelSize                int          `json:"reel_size"`                 // số hàng tối đa
-	RowsSize                int          `json:"rows_size"`                 // số hàng hiển thị
-	NumberOfNodes           int          `json:"number_of_nodes"`           // số lượng node sẽ run
-	LocalPopulationSize     int          `json:"local_population_size"`     // số lượng tế bào trong 1 node
-	LocalOptimizationEpochs int64        `json:"local_optimization_epochs"` // số năm tiến hóa của 1 tế bào trong 1 vòng đời
-	NumberOfLifeCircle      int          `json:"number_of_life_circle"`     // số vòng đời của 1 node
-	Targets                 []float64    `json:"targets"`                   // bảng tỉ lệ ăn
-	Symbols                 []string     `json:"symbols"`                   // list các symbol
-	Types                   []SymbolType `json:"types"`                     // kiểu của kí tự
-	OutputFile              string       `json:"output_file"`
+	ColsSize                   int          `json:"cols_size"`                     // số cột
+	ReelSize                   int          `json:"reel_size"`                     // số hàng tối đa
+	RowsSize                   int          `json:"rows_size"`                     // số hàng hiển thị
+	NumberOfNodes              int          `json:"number_of_nodes"`               // số lượng node sẽ run
+	LocalPopulationSize        int          `json:"local_population_size"`         // số lượng tế bào trong 1 node
+	LocalOptimizationEpochs    int64        `json:"local_optimization_epochs"`     // số năm tiến hóa của 1 tế bào trong 1 vòng đời
+	NumberOfLifeCircle         int          `json:"number_of_life_circle"`         // số vòng đời của 1 node
+	Targets                    []float64    `json:"targets"`                       // bảng tỉ lệ ăn
+	Symbols                    []string     `json:"symbols"`                       // list các symbol
+	Types                      []SymbolType `json:"types"`                         // kiểu của kí tự
+	OutputFile                 string       `json:"output_file"`                   // file lưu kết quả
+	MinimumRequiredSymbolCount []int        `json:"minimum_required_symbol_count"` // số lượng tối thiểu của symbol trong reels, nếu ko giới hạn thì để = 0
 }
 
 func (c *Conf) Validate() {
@@ -62,5 +63,13 @@ func (c *Conf) Validate() {
 
 	if c.Types == nil || len(c.Types) != len(c.Symbols) {
 		panic("types is nil or types length is not as same as symbols length")
+	}
+
+	if c.MinimumRequiredSymbolCount == nil {
+		panic("invalid minimum required symbol count")
+	}
+
+	if len(c.MinimumRequiredSymbolCount) != len(c.Symbols) {
+		panic("minimum required symbol counter length is not as same as symbols length")
 	}
 }

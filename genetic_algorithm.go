@@ -202,12 +202,27 @@ func (g *GeneticAlgorithm) mutation() {
 func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize int) {
 	for p := 0; p < populationSize; p++ {
 		reels := make([][]int, g.conf.ColsSize)
-		for i := 0; i < g.conf.ColsSize; i++ {
-			for j := 0; j < g.conf.ReelSize; j++ {
-				value := rand.Intn(len(g.conf.Symbols))
-				reels[i] = append(reels[i], value)
+
+		Loop: for {
+			counter := make([]int, len(g.conf.Symbols))
+			for i := 0; i < g.conf.ColsSize; i++ {
+				for j := 0; j < g.conf.ReelSize; j++ {
+					value := rand.Intn(len(g.conf.Symbols))
+					reels[i] = append(reels[i], value)
+					counter[value]++
+				}
 			}
+			for i, count := range counter {
+				if g.conf.MinimumRequiredSymbolCount[i] <= 0 {
+					continue
+				}
+				if count < g.conf.MinimumRequiredSymbolCount[i] {
+					continue Loop
+				}
+			}
+			break
 		}
+
 
 		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
 		g.addFitness(machine.evaluate(reels))
