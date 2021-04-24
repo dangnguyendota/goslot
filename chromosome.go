@@ -35,6 +35,13 @@ func ChromosomeString(c *Chromosome, symbols []string) string {
 		result += "\n"
 	}
 	result += path("-", maxSymbolSize, len(c.reels))
+	result += "\n"
+	for i := 0; i < len(c.reels); i++ {
+		for j := 0; j < len(c.reels[i]); j++ {
+			result += symbols[c.reels[i][j]]
+		}
+	}
+	result += "\n"
 	return result
 }
 

@@ -25,7 +25,7 @@ type GeneticAlgorithm struct {
 
 func NewGeneticAlgorithm(conf *Conf) *GeneticAlgorithm {
 	return &GeneticAlgorithm{
-		conf: conf,
+		conf:        conf,
 		population:  []*Chromosome{},
 		resultIndex: 0,
 		firstIndex:  0,
@@ -203,26 +203,26 @@ func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize i
 	for p := 0; p < populationSize; p++ {
 		reels := make([][]int, g.conf.ColsSize)
 
-		Loop: for {
-			counter := make([]int, len(g.conf.Symbols))
-			for i := 0; i < g.conf.ColsSize; i++ {
+		for i := 0; i < g.conf.ColsSize; i++ {
+			reels[i] = make([]int, g.conf.ReelSize)
+		Loop:
+			for {
+				counter := make([]int, len(g.conf.Symbols))
 				for j := 0; j < g.conf.ReelSize; j++ {
-					value := rand.Intn(len(g.conf.Symbols))
-					reels[i] = append(reels[i], value)
-					counter[value]++
+					reels[i][j] = rand.Intn(len(g.conf.Symbols))
+					counter[reels[i][j]]++
 				}
+				for index, count := range counter {
+					if g.conf.MinimumRequiredSymbolCount[i][index] <= 0 {
+						continue
+					}
+					if count < g.conf.MinimumRequiredSymbolCount[i][index] {
+						continue Loop
+					}
+				}
+				break
 			}
-			for i, count := range counter {
-				if g.conf.MinimumRequiredSymbolCount[i] <= 0 {
-					continue
-				}
-				if count < g.conf.MinimumRequiredSymbolCount[i] {
-					continue Loop
-				}
-			}
-			break
 		}
-
 
 		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
 		g.addFitness(machine.evaluate(reels))

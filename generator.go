@@ -2,7 +2,6 @@ package goslot
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"sync"
@@ -33,7 +32,7 @@ func NewGenerator(conf *Conf, model Model) *Generator {
 func (g *Generator) Start() {
 	g.global = NewGeneticAlgorithm(g.conf)
 	g.global.addRandomReels(NewMachine(g.conf, g.model), g.conf.LocalPopulationSize*g.conf.NumberOfNodes)
-	g.StoreChromosome()
+	g.StoreChromosome(g.global.getBestChromosome(), true)
 	for rank := 0; rank < g.conf.NumberOfNodes; rank++ {
 		g.wait.Add(1)
 		go func(rank int) {
@@ -65,31 +64,45 @@ func (g *Generator) setGA(rank int, ga *GeneticAlgorithm) {
 	g.populations[rank] = ga
 	if ga.getBestFitness() < g.global.getBestFitness() {
 		g.global.addChromosome(ga.getBestChromosome())
-		g.StoreChromosome()
+		g.StoreChromosome(ga.getBestChromosome(), true)
+	} else {
+		g.StoreChromosome(ga.getBestChromosome(), false)
 	}
 }
 
-func (g *Generator) StoreChromosome() {
-	ga := g.global.getBestChromosome()
-	data := []byte(fmt.Sprintf("Found best chromosome with fitness: %f\n\n%s\n\n",
-		ga.fitness, ChromosomeString(ga, g.conf.Symbols)))
-	println(string(data))
-	if err := ioutil.WriteFile(g.conf.OutputFile, data, os.ModeAppend | os.ModePerm); err != nil {
+func (g *Generator) StoreChromosome(c *Chromosome, best bool) {
+	data := fmt.Sprintf("\n%s\n", ChromosomeString(c, g.conf.Symbols))
+	if best {
+		data = "BEST ==>" + data
+	}
+	println(data)
+	if err := g.WriteFile([]byte(data)); err != nil {
 		panic(err)
 	}
 }
 
 func (g *Generator) start(rank int) {
-	//model := NewModel(g.conf, g.computeFunc)
 	var counter int
 	for {
 		ga := g.getGA(rank)
 		ga.optimize(NewMachine(g.conf, g.model), g.conf.LocalOptimizationEpochs)
 		g.setGA(rank, ga)
 		counter++
-		//println("rank:", rank, "counter:", counter)
+		println("rank:", rank, "counter:", counter)
 		if counter > g.conf.NumberOfLifeCircle {
 			break
 		}
 	}
+}
+
+func (g *Generator) WriteFile(data []byte) error {
+	f, err := os.OpenFile(g.conf.OutputFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(data)
+	if err1 := f.Close(); err == nil {
+		err = err1
+	}
+	return err
 }
