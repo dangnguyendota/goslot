@@ -205,22 +205,8 @@ func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize i
 
 		for i := 0; i < g.conf.ColsSize; i++ {
 			reels[i] = make([]int, g.conf.ReelSize)
-		Loop:
-			for {
-				counter := make([]int, len(g.conf.Symbols))
-				for j := 0; j < g.conf.ReelSize; j++ {
-					reels[i][j] = rand.Intn(len(g.conf.Symbols))
-					counter[reels[i][j]]++
-				}
-				for index, count := range counter {
-					if g.conf.MinimumRequiredSymbolCount[i][index] <= 0 {
-						continue
-					}
-					if count < g.conf.MinimumRequiredSymbolCount[i][index] {
-						continue Loop
-					}
-				}
-				break
+			for j := 0; j < g.conf.ReelSize; j++ {
+				reels[i][j] = rand.Intn(len(g.conf.Symbols))
 			}
 		}
 

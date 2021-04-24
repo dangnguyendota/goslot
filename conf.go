@@ -21,7 +21,6 @@ type Conf struct {
 	Symbols                    []string     `json:"symbols"`                       // list các symbol
 	Types                      []SymbolType `json:"types"`                         // kiểu của kí tự
 	OutputFile                 string       `json:"output_file"`                   // file lưu kết quả
-	MinimumRequiredSymbolCount [][]int        `json:"minimum_required_symbol_count"` // số lượng tối thiểu của symbol trong reels, nếu ko giới hạn thì để = 0
 }
 
 func (c *Conf) Validate() {
@@ -63,19 +62,5 @@ func (c *Conf) Validate() {
 
 	if c.Types == nil || len(c.Types) != len(c.Symbols) {
 		panic("types is nil or types length is not as same as symbols length")
-	}
-
-	if c.MinimumRequiredSymbolCount == nil {
-		panic("invalid minimum required symbol count")
-	}
-
-	if len(c.MinimumRequiredSymbolCount) != c.ColsSize {
-		panic("minimum required symbol counter length is not as same as cols size")
-	}
-
-	for i := 0; i < c.ColsSize; i++ {
-		if len(c.MinimumRequiredSymbolCount[i]) != len(c.Symbols) {
-			panic("minimum required symbol counter length is not as same as symbols size")
-		}
 	}
 }
