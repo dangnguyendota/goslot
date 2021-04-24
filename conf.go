@@ -73,7 +73,7 @@ func (c *Conf) Validate() {
 		panic("minimum required symbol counter length is not as same as cols size")
 	}
 
-	for i := 0; i <= c.ColsSize; i++ {
+	for i := 0; i < c.ColsSize; i++ {
 		if len(c.MinimumRequiredSymbolCount[i]) != len(c.Symbols) {
 			panic("minimum required symbol counter length is not as same as symbols size")
 		}
