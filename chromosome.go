@@ -17,6 +17,10 @@ func NewChromosome(reels [][]int, fitness float64) *Chromosome {
 	}
 }
 
+func (c *Chromosome) Reels() [][]int {
+	return c.reels
+}
+
 func ChromosomeString(c *Chromosome, symbols []string) string {
 	result := fmt.Sprintf("===> fitness: %f\n", c.fitness)
 	maxSymbolSize := 0

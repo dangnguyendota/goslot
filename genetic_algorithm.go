@@ -199,19 +199,47 @@ func (g *GeneticAlgorithm) mutation() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
+func (g *GeneticAlgorithm) RandomReels(machine *SlotMachine) {
+	reels := make([][]int, g.conf.ColsSize)
+	for i := 0; i < g.conf.ColsSize; i++ {
+		reels[i] = make([]int, g.conf.ReelSize)
+		for j := 0; j < g.conf.ReelSize; j++ {
+			reels[i][j] = rand.Intn(len(g.conf.Symbols))
+		}
+	}
+	g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
+}
+
+func (g *GeneticAlgorithm) GetRandomChromosome() *Chromosome {
+	return g.population[rand.Intn(len(g.population))]
+}
+
 func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize int) {
 	for p := 0; p < populationSize; p++ {
 		reels := make([][]int, g.conf.ColsSize)
 
 		for i := 0; i < g.conf.ColsSize; i++ {
 			reels[i] = make([]int, g.conf.ReelSize)
-			for j := 0; j < g.conf.ReelSize; j++ {
-				reels[i][j] = rand.Intn(len(g.conf.Symbols))
+			Loop: for {
+				checked := make([]bool, len(g.conf.Symbols))
+				for j := 0; j < g.conf.ReelSize; j++ {
+					reels[i][j] = rand.Intn(len(g.conf.Symbols))
+					checked[reels[i][j]] = true
+				}
+				if g.conf.ReelSize <= len(g.conf.Symbols) {
+					break
+				}
+				for _, c := range checked {
+					if !c {
+						continue Loop
+					}
+				}
 			}
+
 		}
 
 		g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
-		g.addFitness(machine.evaluate(reels))
+		g.addFitness(machine.Evaluate(reels))
 	}
 }
 
@@ -222,7 +250,7 @@ func (g *GeneticAlgorithm) optimize(machine *SlotMachine, epochs int64) {
 		g.crossover()
 		g.mutation()
 		index := g.getResultIndex()
-		g.setFitness(machine.evaluate(g.getChromosome(index).reels), index)
+		g.setFitness(machine.Evaluate(g.getChromosome(index).reels), index)
 	}
 }
 
