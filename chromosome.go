@@ -50,6 +50,17 @@ func ChromosomeString(c *Chromosome, symbols []string) string {
 	return result
 }
 
+func (c *Chromosome) Code(symbols []string) string {
+	result := ""
+	for i := 0; i < len(c.reels); i++ {
+		for j := 0; j < len(c.reels[i]); j++ {
+			result += symbols[c.reels[i][j]]
+			result+= "."
+		}
+	}
+	return result
+}
+
 func path(s string, length int, size int) string {
 	ss := ""
 	for i := 0; i < length; i++ {

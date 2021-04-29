@@ -199,13 +199,48 @@ func (g *GeneticAlgorithm) mutation() {
 	g.population[g.resultIndex].fitness = InvalidFitNessValue
 }
 
-func (g *GeneticAlgorithm) RandomReels(machine *SlotMachine) {
+func (g *GeneticAlgorithm) RandomReels(machine *SlotMachine, full bool) {
 	reels := make([][]int, g.conf.ColsSize)
+	var bonusCounter int
+	var tmpBonusCounter int
 	for i := 0; i < g.conf.ColsSize; i++ {
 		reels[i] = make([]int, g.conf.ReelSize)
-		for j := 0; j < g.conf.ReelSize; j++ {
-			reels[i][j] = rand.Intn(len(g.conf.Symbols))
+	Loop:
+		for {
+			tmpBonusCounter = 0
+			checked := make([]bool, len(g.conf.Symbols))
+			for j := 0; j < g.conf.ReelSize; j++ {
+				for {
+					reels[i][j] = rand.Intn(len(g.conf.Symbols))
+					if g.conf.Types[reels[i][j]] == BONUS {
+						if bonusCounter + tmpBonusCounter == 5 {
+							continue
+						} else {
+							tmpBonusCounter++
+						}
+					}
+					break
+				}
+
+				checked[reels[i][j]] = true
+			}
+			if !full {
+				// không chơi full symbols trên 1 reel thì thôi
+				break
+			}
+			if g.conf.ReelSize <= len(g.conf.Symbols) {
+				// nếu kích thước reel < số lượng symbols
+				break
+			}
+			for _, c := range checked {
+				if !c {
+					// có 1 thằng chưa tồn tại trên reel này
+					continue Loop
+				}
+			}
+			break
 		}
+		bonusCounter += tmpBonusCounter
 	}
 	g.addChromosome(NewChromosome(reels, InvalidReelsPenalty))
 }
@@ -220,7 +255,8 @@ func (g *GeneticAlgorithm) addRandomReels(machine *SlotMachine, populationSize i
 
 		for i := 0; i < g.conf.ColsSize; i++ {
 			reels[i] = make([]int, g.conf.ReelSize)
-			Loop: for {
+		Loop:
+			for {
 				checked := make([]bool, len(g.conf.Symbols))
 				for j := 0; j < g.conf.ReelSize; j++ {
 					reels[i][j] = rand.Intn(len(g.conf.Symbols))

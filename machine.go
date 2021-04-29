@@ -1,10 +1,5 @@
 package goslot
 
-import (
-	"fmt"
-	"math"
-)
-
 const InvalidReelsPenalty = 10000
 
 type SlotMachine struct {
@@ -46,7 +41,6 @@ func (s *SlotMachine) Evaluate(reels [][]int) float64 {
 	parameters := s.calculate()
 	var sum float64
 	for i := 0; i < len(s.conf.Targets) && i < len(parameters); i++ {
-		println(fmt.Sprintf("%f", parameters[i]))
 		sum += (s.conf.Targets[i] - parameters[i]) * (s.conf.Targets[i] - parameters[i])
 	}
 
@@ -115,17 +109,10 @@ func (s *SlotMachine) Compute(reels [][]int) map[int64][]float64 {
 	s.load(reels)
 	s.init()
 	m := map[int64][]float64{}
-	for g := s.combinations() - 1; g >= 0; g-- {
-		m[s.StopsNumber()] = s.model.Result(s)
+	combinations := s.combinations() - 1
+	for g := int64(0); g < combinations; g++ {
+		m[g] = s.model.Result(s)
 		s.next()
 	}
 	return m
-}
-
-func (s *SlotMachine) StopsNumber() int64 {
-	var n int64
-	for i := 0; i < s.conf.ColsSize; i++ {
-		n += int64(s.stops[s.conf.ColsSize-1-i]) * int64(math.Pow10(2*i))
-	}
-	return n
 }
